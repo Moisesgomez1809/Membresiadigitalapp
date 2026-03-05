@@ -1,8 +1,7 @@
-import 'dart:ui';
-import 'package:appmemberdigital/screens/home_screen.dart';
 import 'package:flutter/material.dart';
-import '../../services/shared_preferences.dart';
-import '../../services/supabase_service.dart';
+import 'package:appmemberdigital/services/supabase_service.dart';
+import 'package:appmemberdigital/services/shared_preferences.dart';
+import '../home_screen.dart';
 
 class RegistroFase4 extends StatefulWidget {
   final String tipo;
@@ -14,7 +13,7 @@ class RegistroFase4 extends StatefulWidget {
   final String calles;
   final String telefono;
   final String correo;
-  final String contrasena;
+  final String password;
 
   const RegistroFase4({
     super.key,
@@ -27,7 +26,7 @@ class RegistroFase4 extends StatefulWidget {
     required this.calles,
     required this.telefono,
     required this.correo,
-    required this.contrasena,
+    required this.password,
   });
 
   @override
@@ -35,336 +34,252 @@ class RegistroFase4 extends StatefulWidget {
 }
 
 class _RegistroFase4State extends State<RegistroFase4> {
-  bool _aceptaTerminos = false;
-  bool _recibirNotificaciones = true;
-  bool _isLoading = false;
+  bool _aceptoTerminos = false;
+  bool _esMayorEdad = false;
+  bool _cargando = false;
 
-  void _registrar() async {
-    if (!_aceptaTerminos) {
+  Future<void> _finalizarRegistro() async {
+    if (!_aceptoTerminos || !_esMayorEdad) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text("Debe aceptar los términos y condiciones"),
-          backgroundColor: Colors.red,
+        const SnackBar(
+          content: Text("Debes aceptar todos los términos"),
+          backgroundColor: Colors.redAccent,
         ),
       );
       return;
     }
 
-    setState(() {
-      _isLoading = true;
-    });
+    setState(() => _cargando = true);
 
     try {
-      final service = SupabaseService();
-
-      // Crear el domicilio completo
-      String domicilioCompleto = "${widget.calles}, Colonia ${widget.colonia}";
-
-      String fechaOriginal = widget.fechaNacimiento;
-      List<String> partes = fechaOriginal.split('/');
-
-      // Convertimos a formato ISO: YYYY-MM-DD
-      String fechaISO =
-          "${partes[2].padLeft(4, '0')}-${partes[1].padLeft(2, '0')}-${partes[0].padLeft(2, '0')}";
-
-      final uuid = await service.registrarUsuario(
+      final SupabaseService supabaseService = SupabaseService();
+      final String uuid = await supabaseService.registrarUsuario(
         correo: widget.correo,
-        contrasena: widget.contrasena,
+        contrasena: widget.password,
         nombre: widget.nombre,
         tipo: widget.tipo,
-        edad:
-            widget.tipo == "Estudiante" ||
-                    widget.tipo == "Padre" ||
-                    widget.tipo == "Profesor"
-                ? widget.edad
-                : null,
-        escuela: widget.tipo != "Padre" ? widget.escuela : null,
-        domicilio: domicilioCompleto,
-        fechadenac: fechaISO, // Nueva línea
+        edad: widget.edad,
+        escuela: widget.escuela,
+        domicilio: "${widget.colonia}, ${widget.calles}",
+        fechadenac: widget.fechaNacimiento,
       );
-      final userData = {'uuid': uuid, 'nombre': widget.nombre, 'visitas': 0};
-      await SesionManager.guardarSesion(userData);
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(
-          builder:
-              (context) =>
-                  HomeScreen(uuid: uuid, nombre: widget.nombre, visitas: 0),
-        ),
-        (route) => false, // Elimina todas las rutas anteriores
-      );
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red),
-      );
-    } finally {
-      setState(() {
-        _isLoading = false;
+
+      // Guardar sesión
+      await SesionManager.guardarSesion({
+        'uuid': uuid,
+        'nombre': widget.nombre,
+        'visitas': 0,
       });
+
+      if (mounted) {
+        setState(() => _cargando = false);
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder:
+              (context) => AlertDialog(
+                backgroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.check_circle_outline,
+                      color: Colors.green,
+                      size: 80,
+                    ),
+                    const SizedBox(height: 20),
+                    const Text(
+                      "¡Registro Exitoso!",
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF00AEFF),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    const Text(
+                      "Tu cuenta ha sido creada correctamente.",
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 24),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF00AEFF),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        onPressed: () {
+                          // Navegar al home y limpiar stack
+                          Navigator.of(context).pushAndRemoveUntil(
+                            MaterialPageRoute(
+                              builder:
+                                  (context) => HomeScreen(
+                                    uuid: uuid,
+                                    nombre: widget.nombre,
+                                    visitas: 0,
+                                  ),
+                            ),
+                            (route) => false,
+                          );
+                        },
+                        child: const Text(
+                          "Comenzar",
+                          style: TextStyle(color: Colors.white),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _cargando = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Error al registrar: $e"),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+      }
     }
   }
 
-  void _regresar() {
-    Navigator.pop(context);
-  }
+  void _regresar() => Navigator.pop(context);
 
   @override
   Widget build(BuildContext context) {
     final screenHeight = MediaQuery.of(context).size.height;
 
     return Scaffold(
+      backgroundColor: Colors.white,
       resizeToAvoidBottomInset: true,
       body: Stack(
         children: [
-          // Círculo de fondo
+          // Background Elements
           Positioned(
-            bottom: -250,
-            left: -200,
-            right: -200,
+            top: 200,
+            left: -100,
             child: Container(
-              width: 800,
-              height: 800,
+              width: 300,
+              height: 300,
               decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
                   colors: [
-                    Color.fromARGB(255, 0, 204, 255),
-                    Color.fromARGB(255, 2, 77, 175),
+                    const Color(0xFF00AEFF).withValues(alpha: 0.1),
+                    const Color(0xFF00AEFF).withValues(alpha: 0),
                   ],
                 ),
+              ),
+            ),
+          ),
+          Positioned(
+            top: -100,
+            right: -100,
+            child: Container(
+              width: 400,
+              height: 400,
+              decoration: BoxDecoration(
                 shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    const Color(0xFF00AEFF).withValues(alpha: 0.12),
+                    const Color(0xFF00AEFF).withValues(alpha: 0),
+                  ],
+                ),
               ),
             ),
           ),
 
           SafeArea(
             child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
               child: ConstrainedBox(
-                constraints: BoxConstraints(minHeight: screenHeight),
-                child: Padding(
-                  padding: const EdgeInsets.all(30),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      // Logo
-                      Center(
-                        child: Image.asset('assets/logov.png', width: 320),
+                constraints: BoxConstraints(minHeight: screenHeight - 100),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Center(
+                      child: Hero(
+                        tag: 'logo',
+                        child: Image.asset('assets/logov.png', width: 220),
                       ),
-                      SizedBox(height: 20),
+                    ),
+                    const SizedBox(height: 40),
 
-                      // Indicador de progreso
-                      _buildProgressIndicator(4),
-                      SizedBox(height: 20),
+                    _buildStepIndicator(4),
+                    const SizedBox(height: 32),
 
-                      // Formulario de confirmación
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(25),
-                        child: BackdropFilter(
-                          filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
-                          child: Container(
-                            padding: EdgeInsets.all(20),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.2),
-                              borderRadius: BorderRadius.circular(25),
-                              border: Border.all(
-                                color: Colors.white.withOpacity(0.3),
-                                width: 1.5,
-                              ),
-                            ),
-                            child: Column(
-                              children: [
-                                Text(
-                                  "Confirmar Registro",
-                                  style: TextStyle(
-                                    fontSize: 26,
-                                    fontWeight: FontWeight.bold,
-                                    color: Color.fromARGB(255, 255, 81, 0),
-                                  ),
-                                ),
-                                SizedBox(height: 20),
-
-                                // Resumen de datos
-                                _buildSummaryCard(),
-
-                                SizedBox(height: 20),
-
-                                // Checkbox términos y condiciones
-                                Container(
-                                  padding: EdgeInsets.all(15),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white.withOpacity(0.8),
-                                    borderRadius: BorderRadius.circular(15),
-                                  ),
-                                  child: Column(
-                                    children: [
-                                      Row(
-                                        children: [
-                                          Checkbox(
-                                            value: _aceptaTerminos,
-                                            activeColor: Color.fromARGB(
-                                              255,
-                                              255,
-                                              81,
-                                              0,
-                                            ),
-                                            onChanged: (value) {
-                                              setState(() {
-                                                _aceptaTerminos = value!;
-                                              });
-                                            },
-                                          ),
-                                          Expanded(
-                                            child: Text(
-                                              "Acepto los términos y condiciones",
-                                              style: TextStyle(
-                                                fontSize: 16,
-                                                fontWeight: FontWeight.w600,
-                                                color: Color.fromARGB(
-                                                  255,
-                                                  10,
-                                                  65,
-                                                  90,
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      Row(
-                                        children: [
-                                          Checkbox(
-                                            value: _recibirNotificaciones,
-                                            activeColor: Color.fromARGB(
-                                              255,
-                                              0,
-                                              174,
-                                              255,
-                                            ),
-                                            onChanged: (value) {
-                                              setState(() {
-                                                _recibirNotificaciones = value!;
-                                              });
-                                            },
-                                          ),
-                                          Expanded(
-                                            child: Text(
-                                              "Deseo recibir notificaciones",
-                                              style: TextStyle(
-                                                fontSize: 16,
-                                                color: Color.fromARGB(
-                                                  255,
-                                                  10,
-                                                  65,
-                                                  90,
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ],
-                                  ),
-                                ),
-
-                                SizedBox(height: 20),
-
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: ElevatedButton(
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor: Colors.grey[300],
-                                          padding: EdgeInsets.symmetric(
-                                            vertical: 8,
-                                            horizontal:
-                                                8, // menos padding horizontal para móviles pequeños
-                                          ),
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(
-                                              30,
-                                            ),
-                                          ),
-                                        ),
-                                        onPressed: _regresar,
-                                        child: FittedBox(
-                                          fit:
-                                              BoxFit
-                                                  .scaleDown, // ajusta el texto al ancho
-                                          child: Text(
-                                            "Anterior",
-                                            style: TextStyle(
-                                              fontSize: 16,
-                                              color: Color.fromARGB(
-                                                255,
-                                                60,
-                                                60,
-                                                60,
-                                              ),
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                    SizedBox(width: 15),
-                                    Expanded(
-                                      child: ElevatedButton(
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor: Color.fromARGB(
-                                            255,
-                                            255,
-                                            81,
-                                            0,
-                                          ),
-                                          padding: EdgeInsets.symmetric(
-                                            horizontal: 30,
-                                            vertical: 8,
-                                          ),
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(
-                                              30,
-                                            ),
-                                          ),
-                                        ),
-                                        onPressed:
-                                            _isLoading ? null : _registrar,
-                                        child: FittedBox(
-                                          fit: BoxFit.scaleDown,
-                                          child:
-                                              _isLoading
-                                                  ? SizedBox(
-                                                    width: 20,
-                                                    height: 20,
-                                                    child: CircularProgressIndicator(
-                                                      strokeWidth: 2,
-                                                      valueColor:
-                                                          AlwaysStoppedAnimation<
-                                                            Color
-                                                          >(Colors.white),
-                                                    ),
-                                                  )
-                                                  : Text(
-                                                    "Registrar",
-                                                    style: TextStyle(
-                                                      fontSize: 16,
-                                                      color: Colors.white,
-                                                      fontWeight:
-                                                          FontWeight.bold,
-                                                    ),
-                                                  ),
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
+                    _buildFormCard(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            "Resumen de Registro",
+                            style: TextStyle(
+                              fontSize: 28,
+                              fontWeight: FontWeight.w800,
+                              color: Color(0xFF00AEFF),
+                              letterSpacing: -0.5,
                             ),
                           ),
-                        ),
+                          const Text(
+                            "Verifica que todo sea correcto",
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey,
+                              fontWeight: FontWeight.w400,
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+
+                          _buildSummaryTicket(),
+                          const SizedBox(height: 24),
+
+                          _buildCheckboxTile(
+                            "Acepto los términos y condiciones de uso del sistema.",
+                            _aceptoTerminos,
+                            (v) => setState(() => _aceptoTerminos = v!),
+                          ),
+                          _buildCheckboxTile(
+                            "Confirmo que soy mayor de edad.",
+                            _esMayorEdad,
+                            (v) => setState(() => _esMayorEdad = v!),
+                          ),
+
+                          const SizedBox(height: 32),
+
+                          Row(
+                            children: [
+                              Expanded(
+                                child: _buildSecondaryButton(
+                                  text: "Anterior",
+                                  onPressed: _regresar,
+                                ),
+                              ),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: _buildPrimaryButton(
+                                  text: "Finalizar",
+                                  onPressed: _finalizarRegistro,
+                                  loading: _cargando,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -374,92 +289,227 @@ class _RegistroFase4State extends State<RegistroFase4> {
     );
   }
 
-  Widget _buildProgressIndicator(int currentStep) {
+  // --- UI Components ---
+
+  Widget _buildFormCard({required Widget child}) {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(30),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
+        border: Border.all(color: Colors.grey.withValues(alpha: 0.1), width: 1),
+      ),
+      child: child,
+    );
+  }
+
+  Widget _buildStepIndicator(int currentStep) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: List.generate(4, (index) {
+        bool isActive = index < currentStep;
         return Container(
-          margin: EdgeInsets.symmetric(horizontal: 5),
           width: 40,
-          height: 8,
+          height: 6,
+          margin: const EdgeInsets.symmetric(horizontal: 4),
           decoration: BoxDecoration(
             color:
-                index < currentStep
-                    ? Color.fromARGB(255, 255, 81, 0)
-                    : Colors.white.withOpacity(0.5),
-            borderRadius: BorderRadius.circular(4),
+                isActive
+                    ? const Color(0xFF00AEFF)
+                    : Colors.grey.withValues(alpha: 0.2),
+            borderRadius: BorderRadius.circular(10),
           ),
         );
       }),
     );
   }
 
-  Widget _buildSummaryCard() {
+  Widget _buildSummaryTicket() {
     return Container(
-      width: double.infinity,
-      padding: EdgeInsets.all(20),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.9),
+        color: const Color(0xFF00AEFF).withValues(alpha: 0.03),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: Color.fromARGB(255, 0, 174, 255).withOpacity(0.3),
-          width: 2,
+          color: const Color(0xFF00AEFF).withValues(alpha: 0.12),
+          width: 1.5,
+        ),
+        image: DecorationImage(
+          image: const AssetImage('assets/watermark.png'), // Opcional si tienes
+          opacity: 0.05,
+          fit: BoxFit.cover,
         ),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            "Resumen de tu información:",
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Color.fromARGB(255, 255, 81, 0),
-            ),
-          ),
-          SizedBox(height: 15),
-
-          _buildSummaryItem("Tipo:", widget.tipo),
-          _buildSummaryItem("Nombre:", widget.nombre),
-          _buildSummaryItem("Fecha de nacimiento:", widget.fechaNacimiento),
-          if (widget.tipo == "Estudiante")
-            _buildSummaryItem("Edad:", "${widget.edad} años"),
-          if (widget.tipo != "Padre" && widget.tipo != "Empresa")
-            _buildSummaryItem("Escuela:", widget.escuela),
-          _buildSummaryItem(
-            "Domicilio:",
-            "${widget.calles}, Col. ${widget.colonia}",
-          ),
-          _buildSummaryItem("Teléfono:", widget.telefono),
-          _buildSummaryItem("Correo:", widget.correo),
+          _summaryRow("Nombre:", widget.nombre),
+          _divider(),
+          _summaryRow("Ocupación:", widget.tipo),
+          _divider(),
+          _summaryRow("Fecha Nac:", widget.fechaNacimiento),
+          _divider(),
+          _summaryRow("Teléfono:", widget.telefono),
+          _divider(),
+          _summaryRow("Colonia:", widget.colonia),
+          _divider(),
+          _summaryRow("Correo:", widget.correo),
         ],
       ),
     );
   }
 
-  Widget _buildSummaryItem(String label, String value) {
+  Widget _summaryRow(String label, String value) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(
-            width: 100,
-            child: Text(
-              label,
-              style: TextStyle(
-                fontWeight: FontWeight.w600,
-                color: Color.fromARGB(255, 10, 65, 90),
-              ),
+          Text(
+            label,
+            style: TextStyle(
+              color: Colors.grey[600],
+              fontSize: 13,
+              fontWeight: FontWeight.normal,
             ),
           ),
+          const SizedBox(width: 8),
           Expanded(
             child: Text(
               value,
-              style: TextStyle(color: Color.fromARGB(255, 60, 60, 60)),
+              textAlign: TextAlign.end,
+              style: const TextStyle(
+                color: Color(0xFF0A415A),
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+              ),
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _divider() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        children: List.generate(
+          40,
+          (index) => Expanded(
+            child: Container(
+              color:
+                  index % 2 == 0
+                      ? Colors.transparent
+                      : Colors.grey.withValues(alpha: 0.3),
+              height: 1,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCheckboxTile(
+    String label,
+    bool value,
+    Function(bool?) onChanged,
+  ) {
+    return CheckboxListTile(
+      value: value,
+      onChanged: onChanged,
+      title: Text(
+        label,
+        style: TextStyle(color: Colors.grey[700], fontSize: 13),
+      ),
+      activeColor: const Color(0xFF00AEFF),
+      checkColor: Colors.white,
+      contentPadding: EdgeInsets.zero,
+      controlAffinity: ListTileControlAffinity.leading,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+    );
+  }
+
+  Widget _buildPrimaryButton({
+    required String text,
+    required VoidCallback onPressed,
+    bool loading = false,
+  }) {
+    return Container(
+      height: 56,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        gradient: const LinearGradient(
+          colors: [Color(0xFF00AEFF), Color(0xFF0088FF)],
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF00AEFF).withValues(alpha: 0.3),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: ElevatedButton(
+        onPressed: loading ? null : onPressed,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.transparent,
+          shadowColor: Colors.transparent,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+        ),
+        child:
+            loading
+                ? const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    color: Colors.white,
+                    strokeWidth: 2,
+                  ),
+                )
+                : Text(
+                  text,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                    letterSpacing: 1.1,
+                  ),
+                ),
+      ),
+    );
+  }
+
+  Widget _buildSecondaryButton({
+    required String text,
+    required VoidCallback onPressed,
+  }) {
+    return SizedBox(
+      height: 56,
+      child: OutlinedButton(
+        onPressed: onPressed,
+        style: OutlinedButton.styleFrom(
+          side: BorderSide(color: Colors.grey.withValues(alpha: 0.3)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+        ),
+        child: Text(
+          text,
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: Colors.grey[700],
+          ),
+        ),
       ),
     );
   }

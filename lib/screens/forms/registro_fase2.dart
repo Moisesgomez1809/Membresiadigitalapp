@@ -1,7 +1,6 @@
 import 'dart:convert';
-import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart' show rootBundle;
+import 'package:flutter/services.dart';
 import 'registro_fase3.dart';
 
 class RegistroFase2 extends StatefulWidget {
@@ -29,8 +28,9 @@ class _RegistroFase2State extends State<RegistroFase2> {
   String colonia = "";
   String calles = "";
   String telefono = "";
-  List<String> colonias = [];
   bool isOtraColonia = false;
+  List<String> _coloniasJson = [];
+  bool _cargandoColonias = true;
 
   @override
   void initState() {
@@ -39,17 +39,26 @@ class _RegistroFase2State extends State<RegistroFase2> {
   }
 
   Future<void> _cargarColonias() async {
-    final jsonString = await rootBundle.loadString('assets/col.json');
-    final Map<String, dynamic> data = json.decode(jsonString);
-    setState(() {
-      colonias = List<String>.from(data['colonias']);
-    });
+    try {
+      final String response = await rootBundle.loadString('assets/col.json');
+      final data = await json.decode(response);
+      setState(() {
+        _coloniasJson = List<String>.from(data['colonias']);
+        _coloniasJson.sort((a, b) => a.compareTo(b));
+        _cargandoColonias = false;
+      });
+    } catch (e) {
+      debugPrint("Error cargando colonias: $e");
+      setState(() {
+        _coloniasJson = ["Centro"]; // Fallback básico
+        _cargandoColonias = false;
+      });
+    }
   }
 
   void _continuar() {
     if (_formKey.currentState!.validate()) {
       _formKey.currentState!.save();
-
       Navigator.push(
         context,
         MaterialPageRoute(
@@ -69,194 +78,150 @@ class _RegistroFase2State extends State<RegistroFase2> {
     }
   }
 
-  void _regresar() {
-    Navigator.pop(context);
-  }
+  void _regresar() => Navigator.pop(context);
 
   @override
   Widget build(BuildContext context) {
     final screenHeight = MediaQuery.of(context).size.height;
 
     return Scaffold(
+      backgroundColor: Colors.white,
       resizeToAvoidBottomInset: true,
       body: Stack(
         children: [
-          // Círculo de fondo
+          // Background Elements
           Positioned(
-            bottom: -250,
-            left: -200,
-            right: -200,
+            top: 200,
+            left: -100,
             child: Container(
-              width: 800,
-              height: 800,
+              width: 300,
+              height: 300,
               decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
                   colors: [
-                    Color.fromARGB(255, 0, 204, 255),
-                    Color.fromARGB(255, 2, 77, 175),
+                    const Color(0xFF00AEFF).withValues(alpha: 0.1),
+                    const Color(0xFF00AEFF).withValues(alpha: 0),
                   ],
                 ),
+              ),
+            ),
+          ),
+          Positioned(
+            bottom: -150,
+            right: -100,
+            child: Container(
+              width: 400,
+              height: 400,
+              decoration: BoxDecoration(
                 shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    const Color(0xFF00AEFF).withValues(alpha: 0.12),
+                    const Color(0xFF00AEFF).withValues(alpha: 0),
+                  ],
+                ),
               ),
             ),
           ),
 
           SafeArea(
             child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
               child: ConstrainedBox(
-                constraints: BoxConstraints(minHeight: screenHeight),
-                child: Padding(
-                  padding: const EdgeInsets.all(30),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      // Logo
-                      Center(
-                        child: Image.asset('assets/logov.png', width: 320),
+                constraints: BoxConstraints(minHeight: screenHeight - 100),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Center(
+                      child: Hero(
+                        tag: 'logo',
+                        child: Image.asset('assets/logov.png', width: 220),
                       ),
-                      SizedBox(height: 20),
+                    ),
+                    const SizedBox(height: 40),
 
-                      // Indicador de progreso
-                      _buildProgressIndicator(2),
-                      SizedBox(height: 20),
+                    _buildStepIndicator(2),
+                    const SizedBox(height: 32),
 
-                      // Formulario
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(25),
-                        child: BackdropFilter(
-                          filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
-                          child: Container(
-                            padding: EdgeInsets.all(20),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.2),
-                              borderRadius: BorderRadius.circular(25),
-                              border: Border.all(
-                                color: Colors.white.withOpacity(0.3),
-                                width: 1.5,
+                    _buildFormCard(
+                      child: Form(
+                        key: _formKey,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              "Domicilio y Contacto",
+                              style: TextStyle(
+                                fontSize: 28,
+                                fontWeight: FontWeight.w800,
+                                color: Color(0xFF00AEFF),
+                                letterSpacing: -0.5,
                               ),
                             ),
-                            child: Form(
-                              key: _formKey,
-                              child: Column(
-                                children: [
-                                  Text(
-                                    "Domicilio y Contacto",
-                                    style: TextStyle(
-                                      fontSize: 26,
-                                      fontWeight: FontWeight.bold,
-                                      color: Color.fromARGB(255, 255, 81, 0),
-                                    ),
-                                  ),
-                                  SizedBox(height: 20),
-
-                                  // Campo de selección de colonia
-                                  _buildColoniaField(),
-
-                                  _buildField(
-                                    "Calle(s) y número",
-                                    maxLines: 2,
-                                    onSaved: (v) => calles = v!,
-                                  ),
-
-                                  _buildField(
-                                    "Número de teléfono",
-                                    isNumber: true,
-                                    maxLength: 10,
-                                    onSaved: (v) => telefono = v!,
-                                  ),
-
-                                  SizedBox(height: 20),
-
-                                  Row(
-                                    children: [
-                                      Expanded(
-                                        child: ElevatedButton(
-                                          style: ElevatedButton.styleFrom(
-                                            backgroundColor: Colors.grey[300],
-                                            padding: EdgeInsets.symmetric(
-                                              vertical: 15,
-                                              horizontal:
-                                                  8, // menos padding horizontal para móviles pequeños
-                                            ),
-                                            shape: RoundedRectangleBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(30),
-                                            ),
-                                          ),
-                                          onPressed: _regresar,
-                                          child: FittedBox(
-                                            fit:
-                                                BoxFit
-                                                    .scaleDown, // ajusta el texto al ancho
-                                            child: Text(
-                                              "Anterior",
-                                              style: TextStyle(
-                                                fontSize: 16,
-                                                color: Color.fromARGB(
-                                                  255,
-                                                  60,
-                                                  60,
-                                                  60,
-                                                ),
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                      SizedBox(width: 15),
-                                      Expanded(
-                                        child: ElevatedButton(
-                                          style: ElevatedButton.styleFrom(
-                                            backgroundColor: Color.fromARGB(
-                                              255,
-                                              255,
-                                              255,
-                                              255,
-                                            ),
-                                            padding: EdgeInsets.symmetric(
-                                              vertical: 15,
-                                              horizontal:
-                                                  8, // menos padding horizontal
-                                            ),
-                                            shape: RoundedRectangleBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(30),
-                                            ),
-                                          ),
-                                          onPressed: _continuar,
-                                          child: FittedBox(
-                                            fit:
-                                                BoxFit
-                                                    .scaleDown, // ajusta el texto al ancho
-                                            child: Text(
-                                              "Continuar",
-                                              style: TextStyle(
-                                                fontSize: 16,
-                                                color: Color.fromARGB(
-                                                  255,
-                                                  255,
-                                                  81,
-                                                  0,
-                                                ),
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
+                            const Text(
+                              "¿Dónde te podemos encontrar?",
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey,
+                                fontWeight: FontWeight.w400,
                               ),
                             ),
-                          ),
+                            const SizedBox(height: 24),
+
+                            _buildColoniaDropdown(),
+                            if (isOtraColonia) ...[
+                              const SizedBox(height: 16),
+                              _buildField(
+                                label: "Escribe tu colonia",
+                                icon: Icons.location_city_outlined,
+                                onSaved: (v) => colonia = v!,
+                                onChanged: (v) => colonia = v,
+                              ),
+                            ],
+                            const SizedBox(height: 16),
+
+                            _buildField(
+                              label: "Calle(s) y número",
+                              icon: Icons.map_outlined,
+                              maxLines: 2,
+                              onSaved: (v) => calles = v!,
+                            ),
+                            const SizedBox(height: 16),
+
+                            _buildField(
+                              label: "Número de teléfono",
+                              icon: Icons.phone_android_outlined,
+                              isNumber: true,
+                              maxLength: 10,
+                              onSaved: (v) => telefono = v!,
+                            ),
+
+                            const SizedBox(height: 32),
+
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: _buildSecondaryButton(
+                                    text: "Anterior",
+                                    onPressed: _regresar,
+                                  ),
+                                ),
+                                const SizedBox(width: 16),
+                                Expanded(
+                                  child: _buildPrimaryButton(
+                                    text: "Continuar",
+                                    onPressed: _continuar,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
                         ),
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -266,152 +231,249 @@ class _RegistroFase2State extends State<RegistroFase2> {
     );
   }
 
-  Widget _buildColoniaField() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          DropdownButtonFormField<String>(
-            isExpanded: true, // esto evita overflow
-            decoration: InputDecoration(
-              labelText: "Colonia",
-              floatingLabelStyle: TextStyle(
-                fontWeight: FontWeight.w700,
-                fontSize: 24,
-                color: Color.fromARGB(255, 10, 65, 90),
-              ),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(60),
-                borderSide: BorderSide.none,
-              ),
-              filled: true,
-              fillColor: const Color.fromARGB(
-                255,
-                255,
-                255,
-                255,
-              ).withOpacity(0.8),
-            ),
-            items: [
-              ...colonias.map((colonia) {
-                return DropdownMenuItem(value: colonia, child: Text(colonia));
-              }),
-              DropdownMenuItem(value: "Otra...", child: Text("Otra...")),
-            ],
-            onChanged: (value) {
-              setState(() {
-                if (value == "Otra...") {
-                  isOtraColonia = true;
-                  colonia = "";
-                } else {
-                  isOtraColonia = false;
-                  colonia = value!;
-                }
-              });
-            },
-            onSaved: (value) {
-              if (!isOtraColonia) {
-                colonia = value!;
-              }
-            },
-            validator: (value) {
-              if ((value == null || value.isEmpty) && !isOtraColonia) {
-                return 'Seleccione una colonia';
-              }
-              if (isOtraColonia && (colonia.isEmpty)) {
-                return 'Ingrese la colonia';
-              }
-              return null;
-            },
+  // --- UI Components ---
+
+  Widget _buildFormCard({required Widget child}) {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(30),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
           ),
-          if (isOtraColonia)
-            Padding(
-              padding: const EdgeInsets.only(top: 10),
-              child: TextFormField(
-                decoration: InputDecoration(
-                  labelText: "Escribe tu colonia",
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(60),
-                  ),
-                  filled: true,
-                  fillColor: Colors.white.withOpacity(0.8),
-                ),
-                onChanged: (value) => colonia = value,
-                validator: (value) {
-                  if (isOtraColonia && (value == null || value.isEmpty)) {
-                    return 'Ingrese la colonia';
-                  }
-                  return null;
-                },
-              ),
-            ),
         ],
+        border: Border.all(color: Colors.grey.withValues(alpha: 0.1), width: 1),
       ),
+      child: child,
     );
   }
 
-  Widget _buildField(
-    String label, {
-    bool isPassword = false,
-    bool isNumber = false,
-    int? maxLength,
-    int maxLines = 1,
-    required Function(String?) onSaved,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: TextFormField(
-        keyboardType: isNumber ? TextInputType.number : TextInputType.text,
-        maxLength: maxLength,
-        maxLines: maxLines,
-        obscureText: isPassword,
-        decoration: InputDecoration(
-          counterText: "",
-          labelText: label,
-          floatingLabelStyle: TextStyle(
-            fontWeight: FontWeight.w700,
-            fontSize: 24,
-            color: Color.fromARGB(255, 10, 65, 90),
-          ),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(60),
-            borderSide: BorderSide.none,
-          ),
-          filled: true,
-          fillColor: const Color.fromARGB(255, 255, 255, 255).withOpacity(0.8),
-        ),
-        validator: (value) {
-          if (value == null || value.isEmpty) {
-            return 'Este campo es requerido';
-          }
-          if (isNumber && value.length != 10) {
-            return 'Debe tener exactamente 10 dígitos';
-          }
-          return null;
-        },
-        onSaved: onSaved,
-      ),
-    );
-  }
-
-  Widget _buildProgressIndicator(int currentStep) {
+  Widget _buildStepIndicator(int currentStep) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: List.generate(4, (index) {
+        bool isActive = index < currentStep;
         return Container(
-          margin: EdgeInsets.symmetric(horizontal: 5),
           width: 40,
-          height: 8,
+          height: 6,
+          margin: const EdgeInsets.symmetric(horizontal: 4),
           decoration: BoxDecoration(
             color:
-                index < currentStep
-                    ? Color.fromARGB(255, 255, 81, 0)
-                    : Colors.white.withOpacity(0.5),
-            borderRadius: BorderRadius.circular(4),
+                isActive
+                    ? const Color(0xFF00AEFF)
+                    : Colors.grey.withValues(alpha: 0.2),
+            borderRadius: BorderRadius.circular(10),
           ),
         );
       }),
+    );
+  }
+
+  Widget _buildColoniaDropdown() {
+    if (_cargandoColonias) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+        decoration: BoxDecoration(
+          color: Colors.grey.withValues(alpha: 0.05),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.grey.withValues(alpha: 0.1)),
+        ),
+        child: const Row(
+          children: [
+            SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: Color(0xFF00AEFF),
+              ),
+            ),
+            SizedBox(width: 15),
+            Text("Cargando colonias...", style: TextStyle(color: Colors.grey)),
+          ],
+        ),
+      );
+    }
+
+    return DropdownButtonFormField<String>(
+      isExpanded: true,
+      dropdownColor: Colors.white,
+      style: const TextStyle(color: Color(0xFF0A415A), fontSize: 16),
+      decoration: InputDecoration(
+        labelText: "Colonia",
+        labelStyle: TextStyle(color: Colors.grey[600], fontSize: 14),
+        floatingLabelStyle: const TextStyle(
+          color: Color(0xFF00AEFF),
+          fontWeight: FontWeight.bold,
+        ),
+        prefixIcon: Icon(
+          Icons.business_outlined,
+          color: Colors.grey[400],
+          size: 22,
+        ),
+        filled: true,
+        fillColor: Colors.grey.withValues(alpha: 0.05),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(color: Colors.grey.withValues(alpha: 0.1)),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: Color(0xFF00AEFF), width: 1.5),
+        ),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 20,
+          vertical: 18,
+        ),
+      ),
+      items: [
+        ..._coloniasJson.map(
+          (col) => DropdownMenuItem(
+            value: col,
+            child: Text(col, overflow: TextOverflow.ellipsis),
+          ),
+        ),
+        const DropdownMenuItem(value: "Otra...", child: Text("Otra...")),
+      ],
+      onChanged: (value) {
+        setState(() {
+          if (value == "Otra...") {
+            isOtraColonia = true;
+            colonia = "";
+          } else {
+            isOtraColonia = false;
+            colonia = value!;
+          }
+        });
+      },
+      onSaved: (value) {
+        if (!isOtraColonia) colonia = value ?? "";
+      },
+      validator: (v) {
+        if ((v == null || v.isEmpty) && !isOtraColonia)
+          return 'Seleccione una colonia';
+        if (isOtraColonia && (colonia.isEmpty)) return 'Ingrese la colonia';
+        return null;
+      },
+    );
+  }
+
+  Widget _buildField({
+    required String label,
+    required IconData icon,
+    int maxLines = 1,
+    int? maxLength,
+    bool isNumber = false,
+    Function(String?)? onSaved,
+    Function(String)? onChanged,
+  }) {
+    return TextFormField(
+      onSaved: onSaved,
+      onChanged: onChanged,
+      maxLines: maxLines,
+      maxLength: maxLength,
+      keyboardType: isNumber ? TextInputType.number : TextInputType.text,
+      style: const TextStyle(color: Color(0xFF0A415A), fontSize: 16),
+      decoration: InputDecoration(
+        labelText: label,
+        counterText: "",
+        labelStyle: TextStyle(color: Colors.grey[600], fontSize: 14),
+        floatingLabelStyle: const TextStyle(
+          color: Color(0xFF00AEFF),
+          fontWeight: FontWeight.bold,
+        ),
+        prefixIcon: Icon(icon, color: Colors.grey[400], size: 22),
+        filled: true,
+        fillColor: Colors.grey.withValues(alpha: 0.05),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(color: Colors.grey.withValues(alpha: 0.1)),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: Color(0xFF00AEFF), width: 1.5),
+        ),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 20,
+          vertical: 18,
+        ),
+      ),
+      validator: (v) {
+        if (v == null || v.isEmpty) return "Campo obligatorio";
+        if (isNumber && v.length != 10) return "Debe tener 10 dígitos";
+        return null;
+      },
+    );
+  }
+
+  Widget _buildPrimaryButton({
+    required String text,
+    required VoidCallback onPressed,
+  }) {
+    return Container(
+      height: 56,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        gradient: const LinearGradient(
+          colors: [Color(0xFF00AEFF), Color(0xFF0088FF)],
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF00AEFF).withValues(alpha: 0.3),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: ElevatedButton(
+        onPressed: onPressed,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.transparent,
+          shadowColor: Colors.transparent,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+        ),
+        child: Text(
+          text,
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+            letterSpacing: 1.1,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSecondaryButton({
+    required String text,
+    required VoidCallback onPressed,
+  }) {
+    return SizedBox(
+      height: 56,
+      child: OutlinedButton(
+        onPressed: onPressed,
+        style: OutlinedButton.styleFrom(
+          side: BorderSide(color: Colors.grey.withValues(alpha: 0.3)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+        ),
+        child: Text(
+          text,
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: Colors.grey[700],
+          ),
+        ),
+      ),
     );
   }
 }

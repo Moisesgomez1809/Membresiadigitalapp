@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'registro_fase2.dart';
 
@@ -24,7 +23,6 @@ class _RegistroFase1State extends State<RegistroFase1> {
   @override
   void initState() {
     super.initState();
-    // Establecer el tipo preseleccionado
     tipo = widget.tipoPreseleccionado;
   }
 
@@ -34,13 +32,24 @@ class _RegistroFase1State extends State<RegistroFase1> {
       initialDate: DateTime.now(),
       firstDate: DateTime(1950),
       lastDate: DateTime.now(),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: Color(0xFF00AEFF),
+              onPrimary: Colors.white,
+              onSurface: Color(0xFF0A415A),
+            ),
+          ),
+          child: child!,
+        );
+      },
     );
     if (picked != null) {
       setState(() {
         fechaNacimiento = "${picked.day}/${picked.month}/${picked.year}";
         _fechaController.text = fechaNacimiento;
 
-        // Calcular edad automáticamente
         final now = DateTime.now();
         int calculatedAge = now.year - picked.year;
         if (now.month < picked.month ||
@@ -77,225 +86,144 @@ class _RegistroFase1State extends State<RegistroFase1> {
     final screenHeight = MediaQuery.of(context).size.height;
 
     return Scaffold(
+      backgroundColor: Colors.white,
       resizeToAvoidBottomInset: true,
       body: Stack(
         children: [
-          // Círculo de fondo
+          // Background Elements
           Positioned(
-            bottom: -250,
-            left: -200,
-            right: -200,
+            top: -100,
+            right: -100,
             child: Container(
-              width: 800,
-              height: 800,
+              width: 300,
+              height: 300,
               decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
                   colors: [
-                    Color.fromARGB(255, 0, 204, 255),
-                    Color.fromARGB(255, 2, 77, 175),
+                    const Color(0xFF00AEFF).withValues(alpha: 0.08),
+                    const Color(0xFF00AEFF).withValues(alpha: 0),
                   ],
                 ),
+              ),
+            ),
+          ),
+          Positioned(
+            bottom: -150,
+            left: -100,
+            child: Container(
+              width: 400,
+              height: 400,
+              decoration: BoxDecoration(
                 shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    const Color(0xFF00AEFF).withValues(alpha: 0.12),
+                    const Color(0xFF00AEFF).withValues(alpha: 0),
+                  ],
+                ),
               ),
             ),
           ),
 
           SafeArea(
             child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
               child: ConstrainedBox(
-                constraints: BoxConstraints(minHeight: screenHeight),
-                child: Padding(
-                  padding: const EdgeInsets.all(30),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      // Logo
-                      Center(
-                        child: Image.asset('assets/logov.png', width: 320),
+                constraints: BoxConstraints(minHeight: screenHeight - 100),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Center(
+                      child: Hero(
+                        tag: 'logo',
+                        child: Image.asset('assets/logov.png', width: 220),
                       ),
-                      SizedBox(height: 20),
+                    ),
+                    const SizedBox(height: 40),
 
-                      // Indicador de progreso
-                      _buildProgressIndicator(1),
-                      SizedBox(height: 20),
+                    _buildStepIndicator(1),
+                    const SizedBox(height: 32),
 
-                      // Formulario
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(25),
-                        child: BackdropFilter(
-                          filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
-                          child: Container(
-                            padding: EdgeInsets.all(20),
-                            decoration: BoxDecoration(
-                              // ignore: deprecated_member_use
-                              color: Colors.white.withOpacity(0.2),
-                              borderRadius: BorderRadius.circular(25),
-                              border: Border.all(
-                                // ignore: deprecated_member_use
-                                color: Colors.white.withOpacity(0.3),
-                                width: 1.5,
+                    _buildFormCard(
+                      child: Form(
+                        key: _formKey,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              "Datos Personales",
+                              style: TextStyle(
+                                fontSize: 28,
+                                fontWeight: FontWeight.w800,
+                                color: Color(0xFF00AEFF),
+                                letterSpacing: -0.5,
                               ),
                             ),
-                            child: Form(
-                              key: _formKey,
-                              child: Column(
-                                children: [
-                                  Text(
-                                    "Datos Personales",
-                                    style: TextStyle(
-                                      fontSize: 26,
-                                      fontWeight: FontWeight.bold,
-                                      color: Color.fromARGB(255, 255, 81, 0),
-                                    ),
-                                  ),
-                                  SizedBox(height: 20),
-
-                                  // Mostrar ocupación seleccionada (no editable)
-                                  Container(
-                                    width: double.infinity,
-                                    padding: EdgeInsets.all(15),
-                                    decoration: BoxDecoration(
-                                      color: Color.fromARGB(
-                                        255,
-                                        0,
-                                        174,
-                                        255,
-                                      ).withOpacity(0.1),
-                                      borderRadius: BorderRadius.circular(15),
-                                      border: Border.all(
-                                        color: Color.fromARGB(
-                                          255,
-                                          250,
-                                          250,
-                                          250,
-                                        ).withOpacity(0.3),
-                                        width: 2,
-                                      ),
-                                    ),
-                                    child: Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                      children: [
-                                        Icon(
-                                          Icons.person,
-                                          color: Color.fromARGB(
-                                            255,
-                                            248,
-                                            248,
-                                            248,
-                                          ),
-                                          size: 24,
-                                        ),
-                                        SizedBox(width: 10),
-                                        Text(
-                                          "Ocupación: $tipo",
-                                          style: TextStyle(
-                                            fontSize: 18,
-                                            fontWeight: FontWeight.bold,
-                                            color: Color.fromARGB(
-                                              255,
-                                              255,
-                                              255,
-                                              255,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  SizedBox(height: 20),
-
-                                  _buildField(
-                                    "Nombre completo",
-                                    onSaved: (v) => nombre = v!,
-                                  ),
-
-                                  GestureDetector(
-                                    onTap: _seleccionarFecha,
-                                    child: AbsorbPointer(
-                                      child: _buildFieldWithController(
-                                        "Fecha de nacimiento",
-                                        _fechaController,
-                                        suffixIcon: Icons.calendar_today,
-                                        onSaved: (v) => fechaNacimiento = v!,
-                                      ),
-                                    ),
-                                  ),
-
-                                  if (edad.isNotEmpty)
-                                    Padding(
-                                      padding: const EdgeInsets.symmetric(
-                                        vertical: 8,
-                                      ),
-                                      child: Container(
-                                        width: double.infinity,
-                                        padding: EdgeInsets.all(15),
-                                        decoration: BoxDecoration(
-                                          color: Colors.white.withOpacity(0.8),
-                                          borderRadius: BorderRadius.circular(
-                                            60,
-                                          ),
-                                        ),
-                                        child: Text(
-                                          "Edad: $edad años",
-                                          style: TextStyle(
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.w600,
-                                            color: Color.fromARGB(
-                                              255,
-                                              10,
-                                              65,
-                                              90,
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-
-                                  if (tipo != "Padre" && tipo != "Empresa")
-                                    _buildField(
-                                      "Escuela",
-                                      onSaved: (v) => escuela = v!,
-                                    ),
-
-                                  SizedBox(height: 20),
-
-                                  ElevatedButton(
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: Color.fromARGB(
-                                        255,
-                                        255,
-                                        255,
-                                        255,
-                                      ),
-                                      padding: EdgeInsets.symmetric(
-                                        horizontal: 50,
-                                        vertical: 15,
-                                      ),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(30),
-                                      ),
-                                    ),
-                                    onPressed: _continuar,
-                                    child: Text(
-                                      "Continuar",
-                                      style: TextStyle(
-                                        fontSize: 18,
-                                        color: Color.fromARGB(255, 255, 81, 0),
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ),
-                                ],
+                            const Text(
+                              "Cuéntanos un poco sobre ti",
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey,
+                                fontWeight: FontWeight.w400,
                               ),
                             ),
-                          ),
+                            const SizedBox(height: 24),
+
+                            _buildInfoChip(
+                              Icons.person_outline,
+                              "Ocupación: $tipo",
+                            ),
+                            const SizedBox(height: 20),
+
+                            _buildField(
+                              label: "Nombre completo",
+                              icon: Icons.person_outline,
+                              onSaved: (v) => nombre = v!,
+                            ),
+                            const SizedBox(height: 16),
+
+                            GestureDetector(
+                              onTap: _seleccionarFecha,
+                              child: AbsorbPointer(
+                                child: _buildField(
+                                  label: "Fecha de nacimiento",
+                                  icon: Icons.calendar_month_outlined,
+                                  controller: _fechaController,
+                                  onSaved: (v) => fechaNacimiento = v!,
+                                ),
+                              ),
+                            ),
+
+                            if (edad.isNotEmpty) ...[
+                              const SizedBox(height: 16),
+                              _buildInfoChip(
+                                Icons.cake_outlined,
+                                "Edad: $edad años",
+                              ),
+                            ],
+
+                            if (tipo != "Padre" && tipo != "Empresa") ...[
+                              const SizedBox(height: 16),
+                              _buildField(
+                                label: "Escuela",
+                                icon: Icons.school_outlined,
+                                onSaved: (v) => escuela = v!,
+                              ),
+                            ],
+
+                            const SizedBox(height: 32),
+
+                            _buildPrimaryButton(
+                              text: "Continuar",
+                              onPressed: _continuar,
+                            ),
+                          ],
                         ),
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -305,97 +233,155 @@ class _RegistroFase1State extends State<RegistroFase1> {
     );
   }
 
-  Widget _buildProgressIndicator(int currentStep) {
+  // --- UI Components ---
+
+  Widget _buildFormCard({required Widget child}) {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(30),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
+        border: Border.all(color: Colors.grey.withValues(alpha: 0.1), width: 1),
+      ),
+      child: child,
+    );
+  }
+
+  Widget _buildStepIndicator(int currentStep) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: List.generate(4, (index) {
+        bool isActive = index < currentStep;
         return Container(
-          margin: EdgeInsets.symmetric(horizontal: 5),
           width: 40,
-          height: 8,
+          height: 6,
+          margin: const EdgeInsets.symmetric(horizontal: 4),
           decoration: BoxDecoration(
             color:
-                index < currentStep
-                    ? Color.fromARGB(255, 255, 81, 0)
-                    : Colors.white.withOpacity(0.5),
-            borderRadius: BorderRadius.circular(4),
+                isActive
+                    ? const Color(0xFF00AEFF)
+                    : Colors.grey.withValues(alpha: 0.2),
+            borderRadius: BorderRadius.circular(10),
           ),
         );
       }),
     );
   }
 
-  Widget _buildField(
-    String label, {
-    bool isPassword = false,
-    bool isNumber = false,
-    int? maxLength,
-    required Function(String?) onSaved,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: TextFormField(
-        keyboardType: isNumber ? TextInputType.number : TextInputType.text,
-        maxLength: maxLength,
-        obscureText: isPassword,
-        decoration: InputDecoration(
-          counterText: "",
-          labelText: label,
-          floatingLabelStyle: TextStyle(
-            fontWeight: FontWeight.w700,
-            fontSize: 24,
-            color: Color.fromARGB(255, 10, 65, 90),
-          ),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(60),
-            borderSide: BorderSide.none,
-          ),
-          filled: true,
-          fillColor: const Color.fromARGB(255, 255, 255, 255).withOpacity(0.8),
+  Widget _buildInfoChip(IconData icon, String label) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: const Color(0xFF00AEFF).withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: const Color(0xFF00AEFF).withValues(alpha: 0.1),
         ),
-        validator: (value) {
-          if (value == null || value.isEmpty) {
-            return 'Este campo es requerido';
-          }
-          return null;
-        },
-        onSaved: onSaved,
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: const Color(0xFF00AEFF), size: 20),
+          const SizedBox(width: 12),
+          Text(
+            label,
+            style: const TextStyle(
+              color: Color(0xFF00AEFF),
+              fontWeight: FontWeight.w600,
+              fontSize: 15,
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildFieldWithController(
-    String label,
-    TextEditingController controller, {
-    IconData? suffixIcon,
-    required Function(String?) onSaved,
+  Widget _buildField({
+    required String label,
+    required IconData icon,
+    TextEditingController? controller,
+    Function(String?)? onSaved,
   }) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: TextFormField(
-        controller: controller,
-        decoration: InputDecoration(
-          labelText: label,
-          suffixIcon: suffixIcon != null ? Icon(suffixIcon) : null,
-          floatingLabelStyle: TextStyle(
-            fontWeight: FontWeight.w700,
-            fontSize: 24,
-            color: Color.fromARGB(255, 10, 65, 90),
-          ),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(60),
-            borderSide: BorderSide.none,
-          ),
-          filled: true,
-          fillColor: const Color.fromARGB(255, 255, 255, 255).withOpacity(0.8),
+    return TextFormField(
+      controller: controller,
+      onSaved: onSaved,
+      style: const TextStyle(color: Color(0xFF0A415A), fontSize: 16),
+      decoration: InputDecoration(
+        labelText: label,
+        labelStyle: TextStyle(color: Colors.grey[600], fontSize: 14),
+        floatingLabelStyle: const TextStyle(
+          color: Color(0xFF00AEFF),
+          fontWeight: FontWeight.bold,
         ),
-        validator: (value) {
-          if (value == null || value.isEmpty) {
-            return 'Este campo es requerido';
-          }
-          return null;
-        },
-        onSaved: onSaved,
+        prefixIcon: Icon(icon, color: Colors.grey[400], size: 22),
+        filled: true,
+        fillColor: Colors.grey.withValues(alpha: 0.05),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(color: Colors.grey.withValues(alpha: 0.1)),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: Color(0xFF00AEFF), width: 1.5),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: Colors.redAccent, width: 1),
+        ),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 20,
+          vertical: 18,
+        ),
+      ),
+      validator: (v) => v == null || v.isEmpty ? "Campo obligatorio" : null,
+    );
+  }
+
+  Widget _buildPrimaryButton({
+    required String text,
+    required VoidCallback onPressed,
+  }) {
+    return Container(
+      width: double.infinity,
+      height: 56,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        gradient: const LinearGradient(
+          colors: [Color(0xFF00AEFF), Color(0xFF0088FF)],
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF00AEFF).withValues(alpha: 0.3),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: ElevatedButton(
+        onPressed: onPressed,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.transparent,
+          shadowColor: Colors.transparent,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+        ),
+        child: Text(
+          text,
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+            letterSpacing: 1.1,
+          ),
+        ),
       ),
     );
   }

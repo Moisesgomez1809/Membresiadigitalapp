@@ -1,18 +1,15 @@
 import 'package:appmemberdigital/screens/forms/registro_fase1.dart';
 import 'package:flutter/material.dart';
-// Importa tu RegistroFase1
 
-// ignore: camel_case_types
-class Selec_ocupacion extends StatefulWidget {
-  const Selec_ocupacion({super.key});
+class SelecOcupacion extends StatefulWidget {
+  const SelecOcupacion({super.key});
 
   @override
-  // ignore: library_private_types_in_public_api
-  _Selec_ocupacionState createState() => _Selec_ocupacionState();
+  createState() => _Selec_ocupacionState();
 }
 
 // ignore: camel_case_types
-class _Selec_ocupacionState extends State<Selec_ocupacion> {
+class _Selec_ocupacionState extends State<SelecOcupacion> {
   @override
   void initState() {
     super.initState();
@@ -52,7 +49,7 @@ class _Selec_ocupacionState extends State<Selec_ocupacion> {
           SizedBox(height: MediaQuery.of(context).size.height * 0.05),
           Text(
             textAlign: TextAlign.center,
-            "Para una mejor experiencia y beneficios \n selecciona 1 de las 3 opciones\n segun tu ocupacion.",
+            "Para una mejor experiencia y beneficios \n selecciona 1 de las 4 opciones\n segun tu ocupacion.",
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,

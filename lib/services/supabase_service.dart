@@ -22,28 +22,17 @@ class SupabaseService {
     final uuid =
         "${nombre.substring(0, 2).toUpperCase()}${contrasena.substring(0, 3).toUpperCase()}SH$mes$anio";
 
-    final response =
-        await supabase
-            //con el from seleccionamos la tabla
-            .from('usuarios')
-            //con insert, insertamos la informacion "columna": dato a guardar
-            .insert({
-              'nombre': nombre,
-              'edad': edad,
-              'escuela': escuela,
-              'domicilio': domicilio,
-              'email': correo,
-              'password': contrasena,
-              'tipo': tipo,
-              'uuid': uuid,
-              'fechadenac': fechadenac,
-            })
-            .select()
-            .maybeSingle();
-
-    if (response == null) {
-      throw Exception("Error al registrar usuario en la base de datos");
-    }
+    await supabase.from('usuarios').insert({
+      'nombre': nombre,
+      'edad': edad,
+      'escuela': escuela,
+      'domicilio': domicilio,
+      'email': correo,
+      'password': contrasena,
+      'tipo': tipo,
+      'uuid': uuid,
+      'fechadenac': fechadenac,
+    });
 
     return uuid;
   }
@@ -99,6 +88,23 @@ class SupabaseService {
 
     if (response.isEmpty) {
       throw Exception("No se pudo actualizar las visitas del usuario");
+    }
+  }
+
+  /// Obtener solo las visitas del usuario por UUID
+  Future<int?> obtenerVisitas(String uuid) async {
+    try {
+      final res =
+          await supabase
+              .from('usuarios')
+              .select('visitas')
+              .eq('uuid', uuid)
+              .maybeSingle();
+
+      if (res == null) return null;
+      return res['visitas'] as int? ?? 0;
+    } catch (e) {
+      return null;
     }
   }
 }
