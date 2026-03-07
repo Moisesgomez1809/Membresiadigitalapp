@@ -47,8 +47,11 @@ class _RegistroFase1State extends State<RegistroFase1> {
     );
     if (picked != null) {
       setState(() {
-        fechaNacimiento = "${picked.day}/${picked.month}/${picked.year}";
-        _fechaController.text = fechaNacimiento;
+        // Formato para la Base de Datos (ISO: YYYY-MM-DD)
+        fechaNacimiento =
+            "${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}";
+        // Formato para que el usuario lo vea (DD/MM/YYYY)
+        _fechaController.text = "${picked.day}/${picked.month}/${picked.year}";
 
         final now = DateTime.now();
         int calculatedAge = now.year - picked.year;

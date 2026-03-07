@@ -1,9 +1,8 @@
 // ignore_for_file: library_private_types_in_public_api, use_build_context_synchronously
 
-import 'package:appmemberdigital/screens/home_screen.dart';
+import 'package:appmemberdigital/screens/main_screen.dart';
 import 'package:appmemberdigital/services/supabase_service.dart';
 import 'package:flutter/material.dart';
-
 
 import '../../services/shared_preferences.dart';
 
@@ -47,7 +46,7 @@ class _LoginScreenState extends State<LoginScreen> {
           context,
           MaterialPageRoute(
             builder:
-                (context) => HomeScreen(
+                (context) => MainScreen(
                   uuid: userData['uuid'],
                   nombre: userData['nombre'],
                   visitas: userData['visitas'],

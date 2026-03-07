@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:appmemberdigital/services/supabase_service.dart';
 import 'package:appmemberdigital/services/shared_preferences.dart';
-import '../home_screen.dart';
+import '../main_screen.dart';
 
 class RegistroFase4 extends StatefulWidget {
   final String tipo;
@@ -119,7 +119,7 @@ class _RegistroFase4State extends State<RegistroFase4> {
                           Navigator.of(context).pushAndRemoveUntil(
                             MaterialPageRoute(
                               builder:
-                                  (context) => HomeScreen(
+                                  (context) => MainScreen(
                                     uuid: uuid,
                                     nombre: widget.nombre,
                                     visitas: 0,
@@ -353,7 +353,12 @@ class _RegistroFase4State extends State<RegistroFase4> {
           _divider(),
           _summaryRow("Ocupación:", widget.tipo),
           _divider(),
-          _summaryRow("Fecha Nac:", widget.fechaNacimiento),
+          _summaryRow(
+            "Fecha Nac:",
+            widget.fechaNacimiento.contains('-')
+                ? widget.fechaNacimiento.split('-').reversed.join('/')
+                : widget.fechaNacimiento,
+          ),
           _divider(),
           _summaryRow("Teléfono:", widget.telefono),
           _divider(),

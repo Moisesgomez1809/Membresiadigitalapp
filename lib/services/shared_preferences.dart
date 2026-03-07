@@ -1,6 +1,6 @@
+import 'package:appmemberdigital/screens/main_screen.dart';
 import 'package:appmemberdigital/screens/start.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:appmemberdigital/screens/home_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:appmemberdigital/services/supabase_service.dart'; // 👈 Importar tu servicio
 
@@ -53,7 +53,7 @@ class SesionManager {
         debugPrint('⚠️ Error actualizando visitas (usando datos locales): $e');
       }
 
-      return HomeScreen(uuid: uuid, nombre: nombre, visitas: visitasLocales);
+      return MainScreen(uuid: uuid, nombre: nombre, visitas: visitasLocales);
     } else {
       return const StartScreen();
     }
