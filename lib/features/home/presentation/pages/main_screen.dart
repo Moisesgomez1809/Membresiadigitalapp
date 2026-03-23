@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'home_screen.dart';
-import 'coupons_screen.dart';
+import 'package:appmemberdigital/features/coupons/presentation/pages/coupons_screen.dart';
 
 class MainScreen extends StatefulWidget {
   final String uuid;

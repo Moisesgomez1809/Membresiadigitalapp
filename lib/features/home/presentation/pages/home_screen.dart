@@ -1,4 +1,4 @@
-import 'package:appmemberdigital/services/shared_preferences.dart';
+import 'package:appmemberdigital/core/data/datasources/shared_preferences.dart';
 import 'package:flutter/material.dart';
 import 'package:percent_indicator/linear_percent_indicator.dart';
 import 'package:qr_flutter/qr_flutter.dart';

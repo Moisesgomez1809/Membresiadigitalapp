@@ -1,4 +1,4 @@
-// lib/services/supabase_service.dart
+// lib/core/data/datasources/supabase_service.dart
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'supabase_client.dart';
 

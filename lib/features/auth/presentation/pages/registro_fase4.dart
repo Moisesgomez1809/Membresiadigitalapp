@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:appmemberdigital/services/supabase_service.dart';
-import 'package:appmemberdigital/services/shared_preferences.dart';
-import '../main_screen.dart';
+import 'package:appmemberdigital/core/data/datasources/supabase_service.dart';
+import 'package:appmemberdigital/core/data/datasources/shared_preferences.dart';
+import 'package:appmemberdigital/features/home/presentation/pages/main_screen.dart';
 
 class RegistroFase4 extends StatefulWidget {
   final String tipo;

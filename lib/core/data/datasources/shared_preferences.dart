@@ -1,8 +1,8 @@
-import 'package:appmemberdigital/screens/main_screen.dart';
-import 'package:appmemberdigital/screens/start.dart';
+import 'package:appmemberdigital/features/home/presentation/pages/main_screen.dart';
+import 'package:appmemberdigital/features/auth/presentation/pages/start.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/material.dart';
-import 'package:appmemberdigital/services/supabase_service.dart'; // 👈 Importar tu servicio
+import 'supabase_service.dart'; // 👈 Importar tu servicio
 
 class SesionManager {
   // Instancia del servicio de Supabase

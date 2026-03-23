@@ -1,6 +1,6 @@
 // screens/splash_screen.dart
 import 'package:flutter/material.dart';
-import 'services/shared_preferences.dart';
+import 'package:appmemberdigital/core/data/datasources/shared_preferences.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});

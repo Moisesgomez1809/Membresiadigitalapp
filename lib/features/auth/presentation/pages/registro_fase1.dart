@@ -194,7 +194,6 @@ class _RegistroFase1State extends State<RegistroFase1> {
                                   label: "Fecha de nacimiento",
                                   icon: Icons.calendar_month_outlined,
                                   controller: _fechaController,
-                                  onSaved: (v) => fechaNacimiento = v!,
                                 ),
                               ),
                             ),

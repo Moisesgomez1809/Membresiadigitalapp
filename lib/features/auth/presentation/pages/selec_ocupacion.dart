@@ -1,4 +1,4 @@
-import 'package:appmemberdigital/screens/forms/registro_fase1.dart';
+import 'package:appmemberdigital/features/auth/presentation/pages/registro_fase1.dart';
 import 'package:flutter/material.dart';
 
 class SelecOcupacion extends StatefulWidget {

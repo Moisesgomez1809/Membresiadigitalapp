@@ -1,10 +1,11 @@
 // ignore_for_file: library_private_types_in_public_api, use_build_context_synchronously
 
-import 'package:appmemberdigital/screens/main_screen.dart';
-import 'package:appmemberdigital/services/supabase_service.dart';
+import 'package:appmemberdigital/features/home/presentation/pages/main_screen.dart';
+import 'package:appmemberdigital/features/auth/presentation/pages/selec_ocupacion.dart';
+import 'package:appmemberdigital/core/data/datasources/supabase_service.dart';
 import 'package:flutter/material.dart';
 
-import '../../services/shared_preferences.dart';
+import 'package:appmemberdigital/core/data/datasources/shared_preferences.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -209,11 +210,12 @@ class _LoginScreenState extends State<LoginScreen> {
                                 ),
                               ),
                               GestureDetector(
-                                onTap:
-                                    () => Navigator.pushNamed(
-                                      context,
-                                      '/register',
-                                    ),
+                                onTap: () => Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => const SelecOcupacion(),
+                                  ),
+                                ),
                                 child: const Text(
                                   "Regístrate",
                                   style: TextStyle(

@@ -1,8 +1,8 @@
 // start.dart
 
 import 'package:flutter/material.dart';
-import 'package:appmemberdigital/screens/selec_ocupacion.dart';
-import 'package:appmemberdigital/screens/forms/login_screen.dart';
+import 'package:appmemberdigital/features/auth/presentation/pages/selec_ocupacion.dart';
+import 'package:appmemberdigital/features/auth/presentation/pages/login_screen.dart';
 import 'package:animated_text_kit/animated_text_kit.dart';
 
 class StartScreen extends StatefulWidget {
